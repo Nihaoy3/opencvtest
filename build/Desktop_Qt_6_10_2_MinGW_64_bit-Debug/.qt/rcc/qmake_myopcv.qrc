@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="/qt/qml/myopcv">
+    <file alias="qmldir">D:/workspace/QtCreator/code/myopcv/build/Desktop_Qt_6_10_2_MinGW_64_bit-Debug/myopcv/qmldir</file>
+  </qresource>
+</RCC>
+

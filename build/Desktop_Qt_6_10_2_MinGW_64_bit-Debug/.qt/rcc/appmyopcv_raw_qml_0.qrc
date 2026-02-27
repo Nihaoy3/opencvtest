@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="/qt/qml/myopcv/">
+    <file alias="Main.qml">D:/workspace/QtCreator/code/myopcv/Main.qml</file>
+  </qresource>
+</RCC>
+

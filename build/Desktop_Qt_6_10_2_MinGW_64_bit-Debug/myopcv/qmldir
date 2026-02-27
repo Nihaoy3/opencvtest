@@ -1,0 +1,6 @@
+module myopcv
+typeinfo appmyopcv.qmltypes
+prefer :/qt/qml/myopcv/
+Main 254.0 Main.qml
+depends QtQuick
+
