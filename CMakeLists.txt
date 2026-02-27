@@ -21,6 +21,10 @@ qt_add_qml_module(appopcvtest
         SOURCES camerathread.h camerathread.cpp
 )
 
+target_compile_definitions(appopcvtest
+    PRIVATE APP_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
 set_target_properties(appopcvtest PROPERTIES
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
