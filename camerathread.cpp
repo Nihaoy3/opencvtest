@@ -120,7 +120,10 @@ cv::Mat buildSkinMask(const cv::Mat &frame, const std::vector<cv::Rect> &faces)
         cv::GaussianBlur(skinInFace, skinInFace, cv::Size(0, 0), 5.0);
 
         // 合并回全局掩码：取逐像素最大值（更保守，不会互相抵消）。
-        cv::max(mask(face), skinInFace, mask(face));
+        // 这里拆成两步写，避免某些编译环境把 max 误解析为 std::max。
+        cv::Mat mergedFaceMask;
+        ::cv::max(mask(face), skinInFace, mergedFaceMask);
+        mergedFaceMask.copyTo(mask(face));
     }
 
     return mask;
