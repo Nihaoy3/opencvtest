@@ -3,8 +3,9 @@
 
 #include <QThread>
 #include <QImage>
+#include <QMutex>
 #include <opencv2/opencv.hpp>
-#include <opencv2/dnn.hpp> // 👈 必须引入 DNN 模块
+#include <opencv2/dnn.hpp>
 
 class CameraThread : public QThread
 {
@@ -12,11 +13,11 @@ class CameraThread : public QThread
 public:
     explicit CameraThread(QObject *parent = nullptr);
     ~CameraThread() override;
-    void stop();
 
-public:
-    void setBeautyLevel(int level) { m_beautyLevel = level; }
-    void setSharpLevel(float level) { m_sharpLevel = level; }
+    void stop();
+    void setBeautyLevel(int level);
+    void setSharpLevel(float level);
+    void setBeautyEnabled(bool enabled);
 
 signals:
     void frameReady(const QImage &image);
@@ -32,8 +33,10 @@ private:
     std::string m_model_proto;
     std::string m_model_weight;
 
-    int m_beautyLevel = 3;    // 默认磨皮 3 次
-    float m_sharpLevel = 0.2; // 默认原图混合比例 0.2
+    QMutex m_paramMutex;
+    int m_beautyLevel = 3;
+    float m_sharpLevel = 0.2f;
+    bool m_beautyEnabled = true;
 };
 
 #endif
