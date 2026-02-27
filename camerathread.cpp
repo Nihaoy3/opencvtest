@@ -213,12 +213,12 @@ void CameraThread::run()
         double sharpenAmount = sharpLevel * 0.6;
         cv::addWeighted(final, 1.0 + sharpenAmount, soft, -sharpenAmount, 0, final);
 
-        // OpenCV 默认 BGR，QImage 这里用 RGB888，需要转换色彩顺序。
-        cv::cvtColor(final, final, cv::COLOR_BGR2RGB);
+        // OpenCV 摄像头帧默认是 BGR 排列。Qt6 支持 QImage::Format_BGR888，
+        // 因此这里直接按 BGR 解释，避免额外 cvtColor 和潜在通道抖动。
 
         // 注意：QImage 此处引用 Mat 内存，因此 emit 前用 copy() 做深拷贝，
         // 避免下一帧覆盖导致显示异常。
-        QImage img((const unsigned char*)(final.data), final.cols, final.rows, final.step, QImage::Format_RGB888);
+        QImage img((const unsigned char*)(final.data), final.cols, final.rows, final.step, QImage::Format_BGR888);
         emit frameReady(img.copy());
 
         // 简单限速，减少 CPU 占用（约 100 FPS 上限）。
