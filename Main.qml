@@ -32,9 +32,12 @@ ApplicationWindow {
                 id: cameraItem
                 anchors.fill: parent
                 anchors.margins: 1
-                setBeauty(beautyValue)
-                setSharp(sharpValue)
-                setBeautyEnabled(beautyEnabled)
+
+                Component.onCompleted: {
+                    setBeauty(beautyValue)
+                    setSharp(sharpValue)
+                    setBeautyEnabled(beautyEnabled)
+                }
             }
         }
 
