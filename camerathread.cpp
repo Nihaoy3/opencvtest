@@ -4,6 +4,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
+#include <QStringList>
 
 namespace {
 
@@ -124,13 +125,30 @@ cv::Mat applyBeautyInLab(const cv::Mat &frame, const cv::Mat &skinMask, int beau
 QString locateModel(const QString &name)
 {
     const QString appDir = QCoreApplication::applicationDirPath();
-    const QString localPath = QDir(appDir).filePath(name);
-    if (QFileInfo::exists(localPath)) {
-        return localPath;
+
+    QStringList roots;
+    roots << appDir << QDir::currentPath();
+
+#ifdef APP_SOURCE_DIR
+    roots << QStringLiteral(APP_SOURCE_DIR);
+#endif
+
+    QDir walker(appDir);
+    for (int i = 0; i < 6; ++i) {
+        roots << walker.absolutePath();
+        if (!walker.cdUp()) {
+            break;
+        }
     }
 
-    const QString repoPath = QDir::current().filePath(name);
-    return repoPath;
+    for (const QString &root : roots) {
+        const QString candidate = QDir(root).filePath(name);
+        if (QFileInfo::exists(candidate)) {
+            return candidate;
+        }
+    }
+
+    return QString();
 }
 
 } // namespace
@@ -138,16 +156,29 @@ QString locateModel(const QString &name)
 CameraThread::CameraThread(QObject *parent)
     : QThread(parent), m_quit(false)
 {
-    m_model_proto = locateModel("deploy.prototxt").toStdString();
-    m_model_weight = locateModel("res10_300x300_ssd_iter_140000.caffemodel").toStdString();
+    const QString modelProto = locateModel("deploy.prototxt");
+    const QString modelWeight = locateModel("res10_300x300_ssd_iter_140000.caffemodel");
 
-    m_net = cv::dnn::readNetFromCaffe(m_model_proto, m_model_weight);
+    m_model_proto = modelProto.toStdString();
+    m_model_weight = modelWeight.toStdString();
+
+    if (modelProto.isEmpty() || modelWeight.isEmpty()) {
+        qDebug() << "❌ 未找到人脸检测模型文件，已关闭人脸磨皮功能。"
+                 << "proto=" << modelProto << "weight=" << modelWeight;
+        return;
+    }
+
+    try {
+        m_net = cv::dnn::readNetFromCaffe(m_model_proto, m_model_weight);
+    } catch (const cv::Exception &e) {
+        qDebug() << "❌ 读取 DNN 模型失败：" << e.what();
+        return;
+    }
 
     if (m_net.empty()) {
-        qDebug() << "❌ 无法加载 DNN 模型：" << QString::fromStdString(m_model_proto)
-                 << QString::fromStdString(m_model_weight);
+        qDebug() << "❌ 无法加载 DNN 模型：" << modelProto << modelWeight;
     } else {
-        qDebug() << "✅ SSD 深度学习模型加载成功";
+        qDebug() << "✅ SSD 深度学习模型加载成功：" << modelProto;
     }
 }
 
