@@ -13,6 +13,9 @@ ApplicationWindow {
     property int beautyValue: 4
     property real sharpValue: 0.25
     property bool beautyEnabled: true
+    property real whitenValue: 0.2
+    property real detectConfidence: 0.62
+    property bool overlayEnabled: true
 
     RowLayout {
         anchors.fill: parent
@@ -51,6 +54,9 @@ ApplicationWindow {
                     setBeauty(beautyValue)
                     setSharp(sharpValue)
                     setBeautyEnabled(beautyEnabled)
+                    setWhiten(whitenValue)
+                    setDetectConfidence(detectConfidence)
+                    setOverlayEnabled(overlayEnabled)
                 }
             }
         }
@@ -121,6 +127,35 @@ ApplicationWindow {
                     color: "#ffffff"
                     border.color: "#d9e3ef"
                     border.width: 1
+                    implicitHeight: 90
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.margins: 14
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: 6
+                            Label { text: "显示人脸框"; color: "#324156"; font.pixelSize: 16 }
+                            Label { text: overlayEnabled ? "已显示" : "已隐藏"; color: "#7b8ba0"; font.pixelSize: 13 }
+                        }
+
+                        Switch {
+                            checked: overlayEnabled
+                            onToggled: {
+                                overlayEnabled = checked
+                                cameraItem.setOverlayEnabled(checked)
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    radius: 14
+                    color: "#ffffff"
+                    border.color: "#d9e3ef"
+                    border.width: 1
                     implicitHeight: 138
 
                     ColumnLayout {
@@ -143,6 +178,72 @@ ApplicationWindow {
                         }
                         Label {
                             text: beautyValue.toString()
+                            color: "#7b8ba0"
+                            font.pixelSize: 13
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    radius: 14
+                    color: "#ffffff"
+                    border.color: "#d9e3ef"
+                    border.width: 1
+                    implicitHeight: 138
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 8
+
+                        Label { text: "美白程度"; color: "#324156"; font.pixelSize: 16 }
+                        Slider {
+                            Layout.fillWidth: true
+                            from: 0
+                            to: 1
+                            stepSize: 0.01
+                            value: whitenValue
+                            onMoved: {
+                                whitenValue = value
+                                cameraItem.setWhiten(value)
+                            }
+                        }
+                        Label {
+                            text: whitenValue.toFixed(2)
+                            color: "#7b8ba0"
+                            font.pixelSize: 13
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    radius: 14
+                    color: "#ffffff"
+                    border.color: "#d9e3ef"
+                    border.width: 1
+                    implicitHeight: 138
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: 14
+                        spacing: 8
+
+                        Label { text: "人脸检测灵敏度"; color: "#324156"; font.pixelSize: 16 }
+                        Slider {
+                            Layout.fillWidth: true
+                            from: 0.35
+                            to: 0.9
+                            stepSize: 0.01
+                            value: detectConfidence
+                            onMoved: {
+                                detectConfidence = value
+                                cameraItem.setDetectConfidence(value)
+                            }
+                        }
+                        Label {
+                            text: detectConfidence.toFixed(2)
                             color: "#7b8ba0"
                             font.pixelSize: 13
                         }
@@ -196,7 +297,7 @@ ApplicationWindow {
                         wrapMode: Text.WordWrap
                         color: "#74879d"
                         font.pixelSize: 13
-                        text: "优化说明：\n1. 整体配色调整为柔和低饱和浅色，观感更简洁。\n2. 卡片、画面容器加入渐变与圆角，视觉层级更清晰。\n3. 增加悬停缩放与控件过渡动画，交互更自然。"
+                        text: "优化说明：\n1. 新增美白程度、人脸检测灵敏度、人脸框显示等可调参数。\n2. 保持低饱和柔和色调，并延续轻量动画反馈。\n3. 支持在美颜基础上独立微调检测与显示策略。"
                     }
                 }
             }

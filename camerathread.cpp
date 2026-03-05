@@ -13,7 +13,7 @@ struct FaceDetection {
     float confidence = 0.0f;
 };
 
-std::vector<FaceDetection> detectFaces(cv::dnn::Net &net, const cv::Mat &frame)
+std::vector<FaceDetection> detectFaces(cv::dnn::Net &net, const cv::Mat &frame, float confidenceThreshold)
 {
     std::vector<FaceDetection> faces;
     if (net.empty() || frame.empty()) {
@@ -34,7 +34,7 @@ std::vector<FaceDetection> detectFaces(cv::dnn::Net &net, const cv::Mat &frame)
 
     for (int i = 0; i < detection.rows; ++i) {
         const float confidence = detection.at<float>(i, 2);
-        if (confidence < 0.62f) {
+        if (confidence < confidenceThreshold) {
             continue;
         }
 
@@ -135,6 +135,31 @@ cv::Mat applyBeautyInLab(const cv::Mat &frame, const cv::Mat &skinMask, int beau
     cv::Mat beautified;
     cv::cvtColor(lab, beautified, cv::COLOR_Lab2BGR);
     return beautified;
+}
+
+void applySkinWhitening(cv::Mat &frame, const cv::Mat &skinMask, float whitenLevel)
+{
+    if (whitenLevel <= 0.001f || skinMask.empty()) {
+        return;
+    }
+
+    cv::Mat lab;
+    cv::cvtColor(frame, lab, cv::COLOR_BGR2Lab);
+
+    std::vector<cv::Mat> channels;
+    cv::split(lab, channels);
+
+    cv::Mat maskF;
+    skinMask.convertTo(maskF, CV_32FC1, whitenLevel / 255.0f);
+
+    cv::Mat lF;
+    channels[0].convertTo(lF, CV_32FC1);
+    lF = lF + maskF * 28.0f;
+    cv::min(lF, 255.0f, lF);
+    lF.convertTo(channels[0], CV_8UC1);
+
+    cv::merge(channels, lab);
+    cv::cvtColor(lab, frame, cv::COLOR_Lab2BGR);
 }
 
 void drawFaceAnnotations(
@@ -254,6 +279,24 @@ void CameraThread::setBeautyEnabled(bool enabled)
     m_beautyEnabled = enabled;
 }
 
+void CameraThread::setWhitenLevel(float level)
+{
+    QMutexLocker locker(&m_paramMutex);
+    m_whitenLevel = level;
+}
+
+void CameraThread::setDetectConfidence(float confidence)
+{
+    QMutexLocker locker(&m_paramMutex);
+    m_detectConfidence = confidence;
+}
+
+void CameraThread::setOverlayEnabled(bool enabled)
+{
+    QMutexLocker locker(&m_paramMutex);
+    m_overlayEnabled = enabled;
+}
+
 void CameraThread::run()
 {
     if (!m_cap.open(0, cv::CAP_V4L2)) {
@@ -281,23 +324,37 @@ void CameraThread::run()
         int beautyLevel;
         float sharpLevel;
         bool beautyEnabled;
+        float whitenLevel;
+        float detectConfidence;
+        bool overlayEnabled;
 
         {
             QMutexLocker locker(&m_paramMutex);
             beautyLevel = std::max(0, std::min(m_beautyLevel, 10));
             sharpLevel = std::max(0.0f, std::min(m_sharpLevel, 1.0f));
             beautyEnabled = m_beautyEnabled;
+            whitenLevel = std::max(0.0f, std::min(m_whitenLevel, 1.0f));
+            detectConfidence = std::max(0.35f, std::min(m_detectConfidence, 0.9f));
+            overlayEnabled = m_overlayEnabled;
         }
 
         cv::Mat final = frame.clone();
-        std::vector<FaceDetection> faces = detectFaces(m_net, frame);
+        std::vector<FaceDetection> faces = detectFaces(m_net, frame, detectConfidence);
+        cv::Mat skinMask;
 
         if (beautyEnabled && beautyLevel > 0 && !faces.empty()) {
-            cv::Mat skinMask = buildSkinMask(frame, faces);
+            skinMask = buildSkinMask(frame, faces);
             final = applyBeautyInLab(frame, skinMask, beautyLevel);
         }
 
-        if (!faces.empty()) {
+        if (whitenLevel > 0.001f && !faces.empty()) {
+            if (skinMask.empty()) {
+                skinMask = buildSkinMask(frame, faces);
+            }
+            applySkinWhitening(final, skinMask, whitenLevel);
+        }
+
+        if (overlayEnabled && !faces.empty()) {
             drawFaceAnnotations(final, faces, beautyEnabled, beautyLevel);
         }
 
