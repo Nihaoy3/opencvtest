@@ -18,6 +18,9 @@ public:
     void setBeautyLevel(int level);
     void setSharpLevel(float level);
     void setBeautyEnabled(bool enabled);
+    void setWhitenLevel(float level);
+    void setDetectConfidence(float confidence);
+    void setOverlayEnabled(bool enabled);
 
 signals:
     void frameReady(const QImage &image);
@@ -37,6 +40,9 @@ private:
     int m_beautyLevel = 3;
     float m_sharpLevel = 0.2f;
     bool m_beautyEnabled = true;
+    float m_whitenLevel = 0.15f;
+    float m_detectConfidence = 0.62f;
+    bool m_overlayEnabled = true;
 };
 
 #endif
